@@ -7,7 +7,6 @@ namespace BufferGame
         public List<int> Values { get; set; }
         public List<CollectionDescription> ValuesNew { get; set; }
         public Logger Logger { get; set; }
-        public event Action<List<int>> OnBatchReady;
         public event Action<CollectionDescription> OnBatchReadyNew;
 
         public Buffer(Logger logger)
@@ -17,13 +16,6 @@ namespace BufferGame
             Logger = logger;
         }
 
-        public void AddData(int dataValue)
-        {
-            Values.Add(dataValue);
-            Logger.Log($"Added value: {dataValue}");
-
-            ClearIfNecessary();
-        }
 
         public void AddDataNew(Code code, int dataValue)
         {
@@ -96,14 +88,6 @@ namespace BufferGame
             return false;
         }
 
-        public void ClearIfNecessary()
-        {
-            if (Values.Count >= 3)
-            {
-                OnBatchReady?.Invoke(new List<int>(Values));
-                Values.Clear();
-            }
-        }
 
         public void SendToHistoricalData(CollectionDescription collectionDescription)
         {

@@ -18,15 +18,6 @@ namespace BufferGame
             ListDescription = new List<Description>();
         }
 
-        public void StoreDataFromBuffer(List<int> dataValues)
-        {
-            // sad u bazu upisati dataValues
-            foreach (var value in dataValues)
-            {
-                Logger.Log($"Stored value: {value}");
-            }
-            Values.AddRange(dataValues);
-        }
 
         public void StoreDataFromBufferNew(CollectionDescription collectionDescription)
         {
@@ -88,12 +79,6 @@ namespace BufferGame
             return true;
         }
 
-        public void StoreDataFromWritter(int value)
-        {
-            // sad u bazu upisati value
-            Logger.Log($"Stored value directly: {value}");
-            Values.Add(value);
-        }
 
         public void StoreDataFromWritterNew(Code code, int dataValue)
         {

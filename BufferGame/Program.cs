@@ -10,11 +10,8 @@
             var historicalData = new HistoricalData(logger);
             var reader = new Reader(logger);
             
-            //writter.OnDataSentBuffer += buffer.AddData;
             writter.OnDataSentBufferNew += buffer.AddDataNew;
-            //writter.OnDataSentHistoricalData += historicalData.StoreDataFromWritter;
             writter.OnDataSentHistoricalDataNew += historicalData.StoreDataFromWritterNew;
-            //buffer.OnBatchReady += historicalData.StoreDataFromBuffer;
             buffer.OnBatchReadyNew += historicalData.StoreDataFromBufferNew;
             historicalData.OnHistoricalDataReady += reader.ReadData;
             reader.OnHistoricalDataRequested += historicalData.GetDataValues;

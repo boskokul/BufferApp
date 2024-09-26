@@ -49,6 +49,12 @@ namespace BufferGame
                                 description.HistoricalProperties.Add(new HistoricalProperty(buffP.Code, buffP.BufferValue));
                             }
                         }
+                        else
+                        {
+                            // ovde cuvati u bazu, ovo je slucaj kad se direktno upisao jedan u historical data i onda drugi kod nece imati s cim da poredi svoju staru vrednost
+                            Logger.Log($"Storing historical data -> \n ID \t\t\t\t Dataset |  code \t|  value \n {description.ID} {description.Dataset} | {buffP.Code} | {buffP.BufferValue}");
+                            description.HistoricalProperties.Add(new HistoricalProperty(buffP.Code, buffP.BufferValue));
+                        }
                     }
                     
                     return;

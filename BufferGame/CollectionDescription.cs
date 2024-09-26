@@ -1,6 +1,4 @@
-﻿
-
-namespace BufferGame
+﻿namespace BufferGame
 {
     public class CollectionDescription
     {

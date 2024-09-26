@@ -1,6 +1,4 @@
-﻿using System;
-using System.Net.Http.Headers;
-using static BufferGame.GlobalData;
+﻿using static BufferGame.GlobalData;
 
 namespace BufferGame
 {

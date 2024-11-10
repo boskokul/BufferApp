@@ -18,23 +18,19 @@
 
             Console.WriteLine("enter to exit | 1-8 to read data from historical data by code | s to send data from writter directly to historical data\n");
 
-            int userInput = 0;
-            string input = Console.ReadLine();
-            while (!string.IsNullOrWhiteSpace(input))
+            string input;
+            do
             {
+                input = Console.ReadLine();
                 if (input.Equals("s"))
                 {
                     writter.SendDataToHistoricalDataNew();
                 }
-                if (int.TryParse(input, out userInput))
+                else if (int.TryParse(input, out int userInput) && userInput >= 1 && userInput <= 8)
                 {
-                    if (userInput >= 1 && userInput <= 8)
-                    {
-                        reader.RequestData(userInput);
-                    }
+                    reader.RequestData(userInput);
                 }
-                input = Console.ReadLine();
-            }
+            } while (!string.IsNullOrWhiteSpace(input));
         }
     }
 }

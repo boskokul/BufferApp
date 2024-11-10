@@ -1,4 +1,5 @@
-﻿using static BufferGame.GlobalData;
+﻿using System.Collections.Generic;
+using static BufferGame.GlobalData;
 
 namespace BufferGame
 {
@@ -16,49 +17,73 @@ namespace BufferGame
             Logger = logger;
         }
 
-
         public void AddDataNew(Code code, int dataValue)
         {
             if (CodeExists(code))
             {
-                foreach (var cd in ValuesNew)
-                {
-                    foreach (var bp in cd.BufferPropertyCollection)
-                    {
-                        if (bp.Code == code)
-                        {
-                            Logger.Log($"Added value: {dataValue} , code: {code}");
-                            bp.BufferValue = dataValue;
-                            return;
-                        }
-                    }
-                }
+                UpdateExistingBufferProperty(code, dataValue);
             }
-            if (DatasetExists(code))
+            else if (DatasetExists(code))
             {
-                foreach (var cd in ValuesNew)
-                {
-                    if (cd.Dataset == DatasetCodes[code])
-                    {
-                        Logger.Log($"Added value: {dataValue} , code: {code}");
-                        cd.BufferPropertyCollection.Add(new BufferProperty(code, dataValue));
-                        if (cd.BufferPropertyCollection.Count == 2) 
-                        {
-                            SendToHistoricalData(cd);
-                            cd.BufferPropertyCollection.Clear();
-                        }
-                        return;
-                    }
-                }
+                CreateNewBufferPropertyInDataset(code, dataValue);
             }
+            else
+            {
+                CreateNewCollectionDescription(code, dataValue);
+            }
+        }
 
+        private void CreateNewCollectionDescription(Code code, int dataValue)
+        {
             var collectionDescription = new CollectionDescription();
-            collectionDescription.Dataset = DatasetCodes[code];
+            if (DatasetCodes.TryGetValue(code, out int value)) 
+            {
+                collectionDescription.Dataset = value;
+            } 
+            else 
+            {
+                Logger.Log($"Code not valid\n");
+                return; 
+            }
             collectionDescription.ID = Guid.NewGuid();
             collectionDescription.BufferPropertyCollection.Add(new BufferProperty(code, dataValue));
 
             ValuesNew.Add(collectionDescription);
             Logger.Log($"Added value: {dataValue} , code: {code}");
+        }
+
+        private void CreateNewBufferPropertyInDataset(Code code, int dataValue)
+        {
+            foreach (var cd in ValuesNew)
+            {
+                if (DatasetCodes.TryGetValue(code, out var datasetCodeValue) && cd.Dataset == datasetCodeValue)
+                {
+                    Logger.Log($"Added value: {dataValue} , code: {code}");
+                    cd.BufferPropertyCollection.Add(new BufferProperty(code, dataValue));
+                    if (cd.BufferPropertyCollection.Count == 2)
+                    {
+                        SendToHistoricalData(cd);
+                        cd.BufferPropertyCollection.Clear();
+                    }
+                    return;
+                }
+            }
+        }
+
+        private void UpdateExistingBufferProperty(Code code, int dataValue)
+        {
+            foreach (var cd in ValuesNew)
+            {
+                foreach (var bp in cd.BufferPropertyCollection)
+                {
+                    if (bp.Code == code)
+                    {
+                        Logger.Log($"Added value: {dataValue} , code: {code}");
+                        bp.BufferValue = dataValue;
+                        return;
+                    }
+                }
+            }
         }
 
         public bool CodeExists(Code code)
@@ -80,14 +105,13 @@ namespace BufferGame
         {
             foreach (var collectionDescription in ValuesNew)
             {
-                if(collectionDescription.Dataset == DatasetCodes[code])
+                if (DatasetCodes.TryGetValue(code, out var datasetCodeValue) && collectionDescription.Dataset == datasetCodeValue)
                 {
                     return true;
                 }
             }
             return false;
         }
-
 
         public void SendToHistoricalData(CollectionDescription collectionDescription)
         {

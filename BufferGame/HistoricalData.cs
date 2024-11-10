@@ -20,45 +20,25 @@ namespace BufferGame
         public void StoreDataFromBufferNew(CollectionDescription collectionDescription)
         {
             // provera da li je odgovarajuc dataset sa kodovima
-            if (ValidateData(collectionDescription) == false)
+            if (!ValidateData(collectionDescription))
             {
                 Logger.Log($"Dataset and code not valid\n");
                 return;
             }
             foreach (var description in ListDescription)
             {
-                // ako vec postoji ovaj dataset
-                if(description.Dataset == collectionDescription.Dataset)
+                if (description.Dataset == collectionDescription.Dataset)
                 {
-                    var descProps = description.HistoricalProperties.ToArray();
-                    var buffProps = collectionDescription.BufferPropertyCollection.ToArray();
-
-                    // provera novih i istorijski vec upisanih da bi se proverilo da li podatak postoji i da li je van deadbound-a
-                    foreach (var buffP in buffProps)
-                    {
-                        var dP = descProps.LastOrDefault(x => x.Code == buffP.Code);
-                        if (dP != null)
-                        {
-                            // provera da li upisati novopristigle vrednosti
-                            if (((dP.Code == buffP.Code) && (Math.Abs(buffP.BufferValue - dP.HistoricalValue) >= 0.03 * dP.HistoricalValue)) || buffP.Code == GlobalData.Code.CODE_DIGITAL)
-                            {
-                                // ovde cuvati u bazu
-                                Logger.Log($"Storing historical data -> \n ID \t\t\t\t Dataset |  code \t|  value \n {description.ID} {description.Dataset} | {buffP.Code} | {buffP.BufferValue}");
-                                description.HistoricalProperties.Add(new HistoricalProperty(buffP.Code, buffP.BufferValue));
-                            }
-                        }
-                        else
-                        {
-                            // ovde cuvati u bazu, ovo je slucaj kad se direktno upisao jedan u historical data i onda drugi kod nece imati s cim da poredi svoju staru vrednost
-                            Logger.Log($"Storing historical data -> \n ID \t\t\t\t Dataset |  code \t|  value \n {description.ID} {description.Dataset} | {buffP.Code} | {buffP.BufferValue}");
-                            description.HistoricalProperties.Add(new HistoricalProperty(buffP.Code, buffP.BufferValue));
-                        }
-                    }
-                    
+                    ProcessExistingDataset(description, collectionDescription);
                     return;
                 }
             }
             // prvi put nailazi ovaj dataset
+            ProcessNewDataset(collectionDescription);
+        }
+
+        private void ProcessNewDataset(CollectionDescription collectionDescription)
+        {
             Description desc = new Description();
             desc.ID = Guid.NewGuid();
             desc.Dataset = collectionDescription.Dataset;
@@ -71,11 +51,42 @@ namespace BufferGame
             ListDescription.Add(desc);
         }
 
+        private void ProcessExistingDataset(Description description, CollectionDescription collectionDescription)
+        {
+            if (description.Dataset == collectionDescription.Dataset)
+            {
+                var descProps = description.HistoricalProperties.ToArray();
+                var buffProps = collectionDescription.BufferPropertyCollection.ToArray();
+
+                // provera novih i istorijski vec upisanih da bi se proverilo da li podatak postoji i da li je van deadbound-a
+                foreach (var buffP in buffProps)
+                {
+                    var dP = descProps.LastOrDefault(x => x.Code == buffP.Code);
+                    if (dP != null)
+                    {
+                        // provera da li upisati novopristigle vrednosti
+                        if (((dP.Code == buffP.Code) && (Math.Abs(buffP.BufferValue - dP.HistoricalValue) >= 0.03 * dP.HistoricalValue)) || buffP.Code == GlobalData.Code.CODE_DIGITAL)
+                        {
+                            // ovde cuvati u bazu
+                            Logger.Log($"Storing historical data -> \n ID \t\t\t\t Dataset |  code \t|  value \n {description.ID} {description.Dataset} | {buffP.Code} | {buffP.BufferValue}");
+                            description.HistoricalProperties.Add(new HistoricalProperty(buffP.Code, buffP.BufferValue));
+                        }
+                    }
+                    else
+                    {
+                        // ovde cuvati u bazu, ovo je slucaj kad se direktno upisao jedan u historical data i onda drugi kod nece imati s cim da poredi svoju staru vrednost
+                        Logger.Log($"Storing historical data -> \n ID \t\t\t\t Dataset |  code \t|  value \n {description.ID} {description.Dataset} | {buffP.Code} | {buffP.BufferValue}");
+                        description.HistoricalProperties.Add(new HistoricalProperty(buffP.Code, buffP.BufferValue));
+                    }
+                }
+            }
+        }
+
         public bool ValidateData(CollectionDescription collectionDescription) 
         {
             foreach(var bf in collectionDescription.BufferPropertyCollection)
             {
-                if (GlobalData.DatasetCodes[bf.Code] != collectionDescription.Dataset)
+                if (DatasetCodes[bf.Code] != collectionDescription.Dataset)
                 {
                     return false;
                 }
@@ -83,53 +94,57 @@ namespace BufferGame
             return true;
         }
 
-
         public void StoreDataFromWritterNew(Code code, int dataValue)
         {
             // sad u bazu upisati value
             if (DatasetExists(code))
             {
-                foreach (var description in ListDescription)
-                {
-                    if (description.Dataset == DatasetCodes[code])
-                    {
-                        var dP = description.HistoricalProperties.LastOrDefault(x => x.Code == code);
-                        if (dP != null)
-                        {
-                            // provera da li upisati novopristiglu vrednost
-                            if (((dP.Code == code) && (Math.Abs(dataValue - dP.HistoricalValue) >= 0.03 * dP.HistoricalValue)) || code == GlobalData.Code.CODE_DIGITAL)
-                            {
-                                // ovde cuvati u bazu
-                                Logger.Log($"Storing historical data -> \n ID \t\t\t\t Dataset |  code \t|  value \n {description.ID} {description.Dataset} | {code} | {dataValue}");
-                                description.HistoricalProperties.Add(new HistoricalProperty(code, dataValue));
-                            }
-                        }
-                        return;
-                    }
-                }
+                ProcessExistingDatasetForCode(code, dataValue);
             }
+            else
+            {
+                ProcessNewDatasetForCode(code, dataValue);
+            }
+        }
 
+        private void ProcessNewDatasetForCode(Code code, int dataValue)
+        {
             // prvi put nailazi ovaj dataset
             Description desc = new Description();
             desc.ID = Guid.NewGuid();
             desc.Dataset = DatasetCodes[code];
             Logger.Log($"Storing historical data -> \n ID \t\t\t\t Dataset |  code \t|  value \t \n {desc.ID} {desc.Dataset} | {code} | {dataValue}");
-            
+
             // ovde cuvati u bazu
             desc.HistoricalProperties.Add(new HistoricalProperty(code, dataValue));
             ListDescription.Add(desc);
         }
 
-        public bool DatasetExists(Code code)
+        private void ProcessExistingDatasetForCode(Code code, int dataValue)
         {
             foreach (var description in ListDescription)
             {
                 if (description.Dataset == DatasetCodes[code])
                 {
-                    return true;
+                    var dP = description.HistoricalProperties.LastOrDefault(x => x.Code == code);
+                    if (dP != null)
+                    {
+                        // provera da li upisati novopristiglu vrednost
+                        if (((dP.Code == code) && (Math.Abs(dataValue - dP.HistoricalValue) >= 0.03 * dP.HistoricalValue)) || code == GlobalData.Code.CODE_DIGITAL)
+                        {
+                            // ovde cuvati u bazu
+                            Logger.Log($"Storing historical data -> \n ID \t\t\t\t Dataset |  code \t|  value \n {description.ID} {description.Dataset} | {code} | {dataValue}");
+                            description.HistoricalProperties.Add(new HistoricalProperty(code, dataValue));
+                        }
+                    }
+                    return;
                 }
             }
-            return false;
+        }
+
+        public bool DatasetExists(Code code)
+        {
+            return ListDescription.Any(description => description.Dataset == DatasetCodes[code]);
         }
 
         public void GetDataValues(int codeValue) 
